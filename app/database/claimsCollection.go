@@ -5,11 +5,27 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func ClaimsCollection(mdb DBstore) *mongo.Collection {
 	collection := mdb.GetDB().Collection("claims")
 	return collection
+}
+
+func EnsureIndexes(mdb DBstore) error {
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{"user_id", "1"},
+			{"coupon_name", "1"},
+		},
+		Options: options.Index().
+			SetUnique(true),
+	}
+
+	claim := ClaimsCollection(mdb)
+	_, err := claim.Indexes().CreateOne(*mdb.GetCtx(), indexModel)
+	return err
 }
 
 func AddClaim(mdb DBstore, session mongo.SessionContext, data models.Claims) error {
