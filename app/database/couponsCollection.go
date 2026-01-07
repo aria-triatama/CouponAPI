@@ -8,6 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var lookupCouponClaims = bson.D{{"$lookup", bson.D{
+	{"from", "claims"},
+	{"localField", "name"},
+	{"foreignField", "coupon_name"},
+	{"as", "claims"},
+}}}
+
 func CouponsCollection(mdb DBstore) *mongo.Collection {
 	collection := mdb.GetDB().Collection("coupons")
 	return collection
@@ -57,4 +64,31 @@ func UpdateStock(mdb DBstore, session mongo.SessionContext, data models.Claims) 
 	}
 
 	return nil
+}
+
+func GetCouponDetails(mdb DBstore, name string) (models.CouponDetails, error) {
+	details := make([]models.CouponDetails, 0)
+
+	query, err := CouponsCollection(mdb).Aggregate(*mdb.GetCtx(), mongo.Pipeline{
+		lookupCouponClaims,
+		bson.D{{"$unwind", bson.D{
+			{"path", "$claims"},
+			{"preserveNullAndEmptyArrays", true},
+		}}},
+		bson.D{{"$group", bson.D{
+			{"_id", "$_id"},
+			{"name", bson.M{"$first": "$name"}},
+			{"amount", bson.M{"$first": "$amount"}},
+			{"remaining_amount", bson.M{"$first": "$remaining_amount"}},
+			{"claimed_by", bson.M{"$push": bson.M{"user_id": "$claims.user_id"}}},
+		}}},
+		bson.D{{"$match", bson.M{"name": name}}},
+	})
+
+	if err == nil {
+		err = query.All(*mdb.GetCtx(), &details)
+	}
+	defer query.Close(*mdb.GetCtx())
+
+	return details[0], err
 }

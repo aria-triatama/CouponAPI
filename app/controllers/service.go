@@ -101,5 +101,10 @@ func GetCouponDetails(c echo.Context) error {
 		return c.NoContent(http.StatusNotFound)
 	}
 
-	return c.JSON(http.StatusOK, models.CouponDetails{Name: couponName})
+	detail, err := database.GetCouponDetails(Mdb, couponName)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.JSON(http.StatusOK, detail)
 }
