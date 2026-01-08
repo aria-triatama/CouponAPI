@@ -1,9 +1,9 @@
 package models
 
 type Coupons struct {
-	Name            string `json:"name,omitempty"`
-	Amount          int    `json:"amount,omitempty"`
-	RemainingAmount int    `json:"remaining_amount,omitempty"`
+	Name            string `json:"name,omitempty" bson:"name"`
+	Amount          int    `json:"amount,omitempty" bson:"amount"`
+	RemainingAmount int    `json:"remaining_amount,omitempty" bson:"remaining_amount"`
 }
 
 type CouponsRequest struct {

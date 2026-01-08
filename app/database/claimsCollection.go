@@ -13,11 +13,11 @@ func ClaimsCollection(mdb DBstore) *mongo.Collection {
 	return collection
 }
 
-func EnsureIndexes(mdb DBstore) error {
+func EnsureClaimsIndexes(mdb DBstore) error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{
-			{"user_id", "1"},
-			{"coupon_name", "1"},
+			{Key: "user_id", Value: 1},
+			{Key: "coupon_name", Value: 1},
 		},
 		Options: options.Index().
 			SetUnique(true),
@@ -28,10 +28,10 @@ func EnsureIndexes(mdb DBstore) error {
 	return err
 }
 
-func AddClaim(mdb DBstore, session mongo.SessionContext, data models.Claims) error {
+func AddClaim(mdb DBstore, data models.Claims) error {
 	claim := ClaimsCollection(mdb)
 
-	_, err := claim.InsertOne(session, data)
+	_, err := claim.InsertOne(*mdb.GetCtx(), data)
 	if err != nil {
 		return err
 	}

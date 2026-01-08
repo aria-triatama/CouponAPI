@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"errors"
 	"net/http"
 
 	"CouponAPI/database"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var Mdb, _ = database.MongoDB()
@@ -54,43 +52,23 @@ func ClaimCoupon(c echo.Context) error {
 		return c.NoContent(http.StatusConflict)
 	}
 
-	client, _ := Mdb.GetClient()
+	if !database.CheckStock(Mdb, claim) {
+		return c.NoContent(http.StatusBadRequest)
+	}
 
-	session, err := client.StartSession()
-	if err != nil {
+	if !database.ReserveGate(Mdb, claim.CouponName) {
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	defer session.EndSession(*Mdb.GetCtx())
 
-	err = mongo.WithSession(*Mdb.GetCtx(), session, func(s mongo.SessionContext) error {
-		if err := session.StartTransaction(); err != nil {
-			return err
-		}
-
-		if !database.CheckStock(Mdb, s, claim) {
-			session.AbortTransaction(s)
-			return errors.New("no stock")
-		}
-
-		if err := database.AddClaim(Mdb, s, claim); err != nil {
-			session.AbortTransaction(s)
-			return err
-		}
-
-		if err := database.UpdateStock(Mdb, s, claim); err != nil {
-			session.AbortTransaction(s)
-			return err
-		}
-
-		return session.CommitTransaction(s)
-	})
-
-	if err != nil {
-		if err.Error() == "no stock" {
-			return c.NoContent(http.StatusBadRequest)
-		}
+	if err := database.AddClaim(Mdb, claim); err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	if err := database.UpdateStock(Mdb, claim); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	_ = database.ClearGate(Mdb, claim.CouponName)
 
 	return c.NoContent(http.StatusOK)
 }

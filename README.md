@@ -26,4 +26,4 @@ $ curl -X GET http://localhost:1323/api/coupons/PROMO_SUPER
 
 ## Architecture note
 
-Database design is simple, Coupons collection stores coupon documents and Claims collection stores claim documents. In MongoDB I use compound unique index to prevent duplicate claims and using transaction for claiming coupon to prevent race condition. I use aggregation pipeline to get coupon details with claimed by users.
+Database design is simple, Coupons collection stores coupon documents and Claims collection stores claim documents. In MongoDB I use compound unique index to prevent duplicate claims. I also use gates collection to made sure atomic insert on coupon claim. Use aggregation pipeline to get coupon details with claimed by users.

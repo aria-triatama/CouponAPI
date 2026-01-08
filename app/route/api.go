@@ -46,7 +46,8 @@ func Init() *echo.Echo {
 		}
 	})
 
-	database.EnsureIndexes(Mdb)
+	database.EnsureClaimsIndexes(Mdb)
+	database.EnsureGatesIndexes(Mdb)
 
 	e.POST("/api/coupons", controllers.CreateCoupon)
 	e.POST("/api/coupons/claim", controllers.ClaimCoupon)
