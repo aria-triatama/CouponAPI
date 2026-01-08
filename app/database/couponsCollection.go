@@ -80,13 +80,17 @@ func GetCouponDetails(mdb DBstore, name string) (models.CouponDetails, error) {
 			{"name", bson.M{"$first": "$name"}},
 			{"amount", bson.M{"$first": "$amount"}},
 			{"remaining_amount", bson.M{"$first": "$remaining_amount"}},
-			{"claimed_by", bson.M{"$push": bson.M{"user_id": "$claims.user_id"}}},
+			{"claimed_by", bson.M{"$push": "$claims.user_id"}},
 		}}},
 		bson.D{{"$match", bson.M{"name": name}}},
 	})
 
-	if err == nil {
-		err = query.All(*mdb.GetCtx(), &details)
+	if err != nil {
+		return models.CouponDetails{}, err
+	}
+
+	if err = query.All(*mdb.GetCtx(), &details); err != nil {
+		return models.CouponDetails{}, err
 	}
 	defer query.Close(*mdb.GetCtx())
 
